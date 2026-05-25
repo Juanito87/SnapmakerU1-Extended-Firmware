@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DIR="/oem/apps/octoeverywhere/latest"
+DIR="/oem/apps/octoeverywhere/src"
 PIDFILE="/var/run/octoeverywhere.pid"
 PYTHON="/oem/apps/octoeverywhere/venv/bin/python3"
 STATE_DIR="/home/lava/printer_data/octoeverywhere-store"
@@ -28,7 +28,7 @@ config_json() {
     "LocalFileStoragePath": "/home/lava/printer_data/octoeverywhere-store",
     "ServiceName": "octoeverywhere",
     "VirtualEnvPath": "/oem/apps/octoeverywhere/venv",
-    "RepoRootFolder": "/oem/apps/octoeverywhere/latest",
+    "RepoRootFolder": "/oem/apps/octoeverywhere/src",
     "IsCompanion": true
 }
 EOF

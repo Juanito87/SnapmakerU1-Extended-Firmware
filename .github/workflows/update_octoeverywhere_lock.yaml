@@ -1,0 +1,57 @@
+name: Refresh OctoEverywhere Lock
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: OctoEverywhere upstream commit SHA to pin
+        required: true
+        type: string
+      version:
+        description: Optional human-readable version label for octoeverywhere-pkg
+        required: false
+        type: string
+
+jobs:
+  refresh-octoeverywhere-lock:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Refresh lock and source pin
+      shell: bash
+      run: |
+        set -euo pipefail
+        cmd=(scripts/dev/update_octoeverywhere_lock.sh --commit "${{ inputs.commit }}")
+        if [[ -n "${{ inputs.version }}" ]]; then
+          cmd+=(--version "${{ inputs.version }}")
+        fi
+        "${cmd[@]}"
+
+    - name: Run OctoEverywhere tests
+      run: python3 -m unittest tests.test_octoeverywhere_pkg -v
+
+    - name: Create review patch
+      run: |
+        git diff --no-ext-diff -- \
+          overlays/firmware-extended/65-app-cloud/root/usr/local/share/octoeverywhere/requirements.lock \
+          overlays/firmware-extended/65-app-cloud/root/usr/local/bin/octoeverywhere-pkg \
+          > octoeverywhere-refresh.patch
+
+    - name: Upload refresh artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: octoeverywhere-refresh
+        if-no-files-found: error
+        path: |
+          overlays/firmware-extended/65-app-cloud/root/usr/local/share/octoeverywhere/requirements.lock
+          overlays/firmware-extended/65-app-cloud/root/usr/local/bin/octoeverywhere-pkg
+          octoeverywhere-refresh.patch

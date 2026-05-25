@@ -2,18 +2,22 @@
 
 #
 # OctoEverywhere package manager
-# Downloads and installs a pinned version of OctoEverywhere from GitHub
+# Downloads and installs a pinned OctoEverywhere commit from GitHub
 #
 
 VERSION="4.6.8"
-URL="https://github.com/QuinnDamerell/OctoPrint-OctoEverywhere/archive/refs/tags/${VERSION}.zip"
-SHA256="fd16e88824f9b8026b1879a03a48f015f81a4f96b28448cd94fe3093ad52e750"
+COMMIT="cf776101e37672de39b3de87703816ca10744ead"
+URL="https://github.com/QuinnDamerell/OctoPrint-OctoEverywhere/archive/${COMMIT}.zip"
+SHA256="c4dd63ea8aad1bccc8410088b45cf6aa7d0e440a5c1263ad5a7a46e584e10b80"
 
 # These paths are referenced in the init.d script
 APP_DIR="/oem/apps/octoeverywhere"
+SOURCE_DIR="$APP_DIR/src"
+SOURCE_ARCHIVE_DIR="$APP_DIR/OctoPrint-OctoEverywhere-${COMMIT}"
+LOCK_FILE="/usr/local/share/octoeverywhere/requirements.lock"
 
 check() {
-    if [[ -d "$APP_DIR/latest" ]]; then
+    if [[ -d "$SOURCE_DIR" && -x "$APP_DIR/venv/bin/python3" ]]; then
         echo "OctoEverywhere is installed."
         return 0
     else
@@ -26,7 +30,7 @@ download() {
     rm -rf "$APP_DIR"
     mkdir -p "$APP_DIR"
 
-    echo "Downloading OctoEverywhere ${VERSION} From GitHub..."
+    echo "Downloading OctoEverywhere ${VERSION} (${COMMIT}) from GitHub..."
     if ! /usr/local/bin/curl -sfSL -o "$APP_DIR/octoeverywhere.zip" "$URL"; then
         echo "Download failed"
         return 1
@@ -47,9 +51,17 @@ download() {
         echo "Extraction failed"
         return 1
     fi
+    if [[ ! -d "$SOURCE_ARCHIVE_DIR" ]]; then
+        echo "Extraction failed: expected source directory $SOURCE_ARCHIVE_DIR"
+        return 1
+    fi
+    if ! mv "$SOURCE_ARCHIVE_DIR" "$SOURCE_DIR"; then
+        echo "Extraction failed: could not normalize source directory"
+        return 1
+    fi
     echo "Extraction successful."
 
-    rm -rf "$APP_DIR/octoeverywhere.zip"
+    rm -f "$APP_DIR/octoeverywhere.zip"
 
     echo "Setting up Python virtual environment (this can take up to 60 seconds)..."
     if ! python3 -m venv "$APP_DIR/venv"; then
@@ -57,19 +69,19 @@ download() {
         return 1
     fi
 
-    echo "Installing dependencies (this can also take a bit)..."
-    if ! "$APP_DIR/venv/bin/pip" install --disable-pip-version-check -r "$APP_DIR/OctoPrint-OctoEverywhere-${VERSION}/requirements.txt"; then
-        echo "Failed to install dependencies"
+    if [[ ! -f "$LOCK_FILE" ]]; then
+        echo "Locked dependency manifest missing: $LOCK_FILE"
         return 1
     fi
 
-    echo "Trying to install the optional zstdstandard package for better performance..."
-    if ! "$APP_DIR/venv/bin/pip" install --disable-pip-version-check zstandard; then
-        echo "Failed to install zstandard, continuing without it."
+    echo "Installing hash-locked dependencies (this can also take a bit)..."
+    if ! "$APP_DIR/venv/bin/pip" install --disable-pip-version-check --require-hashes -r "$LOCK_FILE"; then
+        echo "Failed to install locked dependencies. Check source and package hashes."
+        return 1
     fi
 
-    # GitHub archives extract to OctoPrint-OctoEverywhere-<tag>
-    ln -s "OctoPrint-OctoEverywhere-${VERSION}" "$APP_DIR/latest"
+    rm -f "$APP_DIR/latest"
+    ln -s "src" "$APP_DIR/latest"
     echo "OctoEverywhere installed successfully to $APP_DIR"
 }
 

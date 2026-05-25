@@ -11,14 +11,17 @@ Third-party integrations in this firmware are handled through an on-demand downl
 External components that are non-essential to core printer operations and of significant size are not bundled with the firmware image. Instead, they are:
 
 1. Fetched on-demand when enabled by the user
-2. Pinned to specific versions
+2. Pinned to immutable upstream source revisions whenever possible
 3. Verified using SHA256 checksums
+4. Installed only from repo-approved dependency locks when they require package-manager resolution
 
 This reduces firmware image size, allows independent component updates, and maintains separation between core and optional functionality.
 
 ## Implementation Pattern
 
 External components use the `*-pkg` package manager pattern. Each integration provides a shell script that handles downloading, verification, and installation.
+
+For source archives, prefer an explicit commit archive over a release or tag URL whenever the upstream provider exposes one. A human-readable version label may still appear in logs or docs, but the installer must pin and verify the exact archive bytes it expects.
 
 ### Example
 
@@ -37,15 +40,18 @@ Characteristics:
 - Not included in firmware image
 - Installed to `/oem/apps/tailscale-${VERSION}`
 
-## Strict Versioning
+## Strict Pinning
 
-Each external component is pinned to a specific version:
-- Version numbers are hardcoded in the package manager script
+Each external component is pinned to a specific upstream artifact:
+- Commit hashes are preferred over version-only labels when possible
+- Version numbers may remain in docs or log output, but they are not the trust anchor
 - No automatic updates
-- Upgrades require firmware update with new version and checksum
-- Same firmware version fetches the same external component version
+- Upgrades require firmware update with new source revision and checksum
+- Same firmware version fetches the same upstream artifact bytes
 
 Downloads are verified using SHA256 checksums. If verification fails, installation aborts.
+
+If an integration installs Python packages at runtime, top-level source verification is not sufficient by itself. The firmware repo must also carry a dependency lock file with explicit package versions and `--hash=sha256:...` entries for every allowed artifact, and the installer must use `pip install --require-hashes`.
 
 ## Package Manager Interface
 
