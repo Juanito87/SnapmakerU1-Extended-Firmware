@@ -25,7 +25,13 @@ For external RFID API and mapping details, see [External RFID Support](design/fi
 
 - Docker installed on your system
 
-The `./dev.sh` script automatically sets up a Debian Trixie ARM64 environment with all required dependencies.
+The shared development image is defined in `.github/dev/Dockerfile`. It is the single source of truth for:
+
+- `./dev.sh`
+- the repository devcontainer
+- build workflows that rely on the local development image
+
+The `./dev.sh` script automatically builds that image and starts a Debian Trixie environment with all required dependencies.
 
 ## Source Repository
 
@@ -64,6 +70,13 @@ Open a shell in the development environment:
 ```bash
 ./dev.sh bash
 ```
+
+Open the same environment in a devcontainer-compatible editor:
+
+1. Open the repository in your editor.
+1. Reopen it in the devcontainer defined by `.devcontainer/devcontainer.json`.
+
+This reuses `.github/dev/Dockerfile`, so editor-based development and `./dev.sh` run with the same pinned dependency set.
 
 ## Profiles
 
@@ -224,6 +237,19 @@ The project uses GitHub Actions for automated releases:
 2. Extended firmware is built
 3. Version is auto-incremented using `scripts/next_version.sh`
 4. Release artifacts are published to GitHub Releases
+
+## Dev Environment Validation
+
+Changes to `dev.sh`, `.github/dev/Dockerfile`, or `.devcontainer/` trigger the `Validate Dev Environment` workflow.
+
+That workflow verifies:
+
+- `dev.sh` still targets the shared image definition
+- the devcontainer still builds from the same Dockerfile
+- `./dev.sh make tools` succeeds
+- `./dev.sh make firmware` succeeds
+
+If one of those checks fails, the development environment has gained an undocumented requirement or drifted from the shared image contract.
 
 ## Tools
 

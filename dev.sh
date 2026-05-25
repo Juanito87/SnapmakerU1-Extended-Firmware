@@ -4,8 +4,13 @@ set -e
 
 IMAGE_NAME="snapmaker-u1-dev"
 BUILD_CONTEXT=".github/dev"
+BUILD_FLAGS=()
 
-if ! docker build --cache-from "$IMAGE_NAME" -t "$IMAGE_NAME" "$BUILD_CONTEXT"; then
+if docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
+    BUILD_FLAGS+=(--cache-from "$IMAGE_NAME")
+fi
+
+if ! docker build $DOCKER_BUILD_OPTS "${BUILD_FLAGS[@]}" -t "$IMAGE_NAME" "$BUILD_CONTEXT"; then
     echo "[!] Docker build failed."
     exit 1
 fi
