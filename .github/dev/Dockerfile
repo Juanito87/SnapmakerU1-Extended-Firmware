@@ -26,7 +26,8 @@ ARG CCACHE_VERSION=4.11.2-2
 ARG LIBSSL_DEV_ARM64_VERSION=3.5.6-1~deb13u1
 
 RUN set -eux; \
-    case "${TARGETARCH}" in \
+    detected_arch="$(dpkg --print-architecture)"; \
+    case "${detected_arch}" in \
       amd64) \
         dpkg --add-architecture arm64; \
         foreign_ssl_package="libssl-dev:arm64=${LIBSSL_DEV_ARM64_VERSION}"; \
@@ -35,7 +36,7 @@ RUN set -eux; \
         foreign_ssl_package=""; \
         ;; \
       *) \
-        echo "Unsupported TARGETARCH: ${TARGETARCH}" >&2; \
+        echo "Unsupported Debian architecture: ${detected_arch} (TARGETARCH=${TARGETARCH})" >&2; \
         exit 1; \
         ;; \
     esac; \
