@@ -23,7 +23,15 @@ on:
 
 jobs:
   validate-dev-environment:
-    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
     steps:
@@ -68,9 +76,51 @@ jobs:
       with:
         context: .github/dev
         load: true
+        platforms: ${{ matrix.platform }}
         tags: snapmaker-u1-dev:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
+
+    - name: Dump apt pin diagnostics
+      if: ${{ failure() }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "runner=${{ matrix.runner }}"
+        echo "platform=${{ matrix.platform }}"
+        echo "Pinned Dockerfile versions:"
+        grep '^ARG .*_VERSION=' .github/dev/Dockerfile || true
+        docker run --rm --platform "${{ matrix.platform }}" debian:trixie bash -lc '
+          set -euo pipefail
+          if [ "$(dpkg --print-architecture)" != "arm64" ]; then
+            dpkg --add-architecture arm64
+          fi
+          apt-get update -qq >/dev/null
+          apt-cache policy \
+            build-essential \
+            cmake \
+            pkg-config \
+            squashfs-tools \
+            git \
+            bc \
+            flex \
+            bison \
+            ca-certificates \
+            libssl-dev \
+            libssl-dev:arm64 \
+            dos2unix \
+            sudo \
+            sshpass \
+            unzip \
+            wget \
+            file \
+            g++-aarch64-linux-gnu \
+            gcc-aarch64-linux-gnu \
+            u-boot-tools \
+            golang-go \
+            ffmpeg \
+            ccache
+        '
 
     - name: Smoke test build tools
       run: ./dev.sh make tools

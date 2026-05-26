@@ -29,6 +29,11 @@ class DevEnvironmentTests(unittest.TestCase):
     def test_dockerfile_pins_base_image_and_apt_packages(self):
         content = DEV_DOCKERFILE.read_text()
         self.assertRegex(content.splitlines()[0], r"^FROM\s+debian:[^\s]+@sha256:[0-9a-f]{64}$")
+        self.assertIn("ARG TARGETARCH", content)
+        self.assertRegex(content, r'case "\$\{?TARGETARCH\}?" in')
+        self.assertIn("amd64)", content)
+        self.assertIn("arm64)", content)
+        self.assertRegex(content, r"libssl-dev:arm64=.*\$\{LIBSSL_DEV_ARM64_VERSION\}")
 
         packages = [
             "build-essential",
@@ -74,6 +79,13 @@ class DevEnvironmentTests(unittest.TestCase):
         self.assertIn("./dev.sh make firmware", content)
         self.assertIn("devcontainer.json", content)
         self.assertIn("Validate shared Dockerfile wiring", content)
+        self.assertIn("matrix:", content)
+        self.assertIn("linux/amd64", content)
+        self.assertIn("linux/arm64", content)
+        self.assertRegex(content, r"runs-on:\s*\$\{\{\s*matrix\.runner\s*\}\}")
+        self.assertRegex(content, r"platforms:\s*\$\{\{\s*matrix\.platform\s*\}\}")
+        self.assertIn("Dump apt pin diagnostics", content)
+        self.assertIn("if: ${{ failure() }}", content)
 
     def test_docs_explain_devcontainer_and_shared_image(self):
         content = DEVELOPMENT_DOC.read_text()
