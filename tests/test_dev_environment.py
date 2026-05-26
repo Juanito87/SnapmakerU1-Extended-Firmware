@@ -35,6 +35,7 @@ class DevEnvironmentTests(unittest.TestCase):
         self.assertIn("amd64)", content)
         self.assertIn("arm64)", content)
         self.assertRegex(content, r"libssl-dev:arm64=.*\$\{LIBSSL_DEV_ARM64_VERSION\}")
+        self.assertIn("foreign_ssl_package=\"libssl-dev:arm64=${LIBSSL_DEV_ARM64_VERSION}*\"", content)
 
         packages = [
             "build-essential",
@@ -67,6 +68,38 @@ class DevEnvironmentTests(unittest.TestCase):
                 content,
                 rf"\b{re.escape(package)}=[^\s\\]+",
                 msg=f"{package} must be pinned to an explicit version",
+            )
+
+        wildcard_pinned_packages = [
+            ("build-essential", "BUILD_ESSENTIAL_VERSION"),
+            ("cmake", "CMAKE_VERSION"),
+            ("pkg-config", "PKG_CONFIG_VERSION"),
+            ("squashfs-tools", "SQUASHFS_TOOLS_VERSION"),
+            ("git", "GIT_VERSION"),
+            ("bc", "BC_VERSION"),
+            ("flex", "FLEX_VERSION"),
+            ("bison", "BISON_VERSION"),
+            ("ca-certificates", "CA_CERTIFICATES_VERSION"),
+            ("libssl-dev", "LIBSSL_DEV_VERSION"),
+            ("dos2unix", "DOS2UNIX_VERSION"),
+            ("sudo", "SUDO_VERSION"),
+            ("sshpass", "SSHPASS_VERSION"),
+            ("unzip", "UNZIP_VERSION"),
+            ("wget", "WGET_VERSION"),
+            ("file", "FILE_VERSION"),
+            ("g++-aarch64-linux-gnu", "GXX_AARCH64_VERSION"),
+            ("gcc-aarch64-linux-gnu", "GCC_AARCH64_VERSION"),
+            ("u-boot-tools", "U_BOOT_TOOLS_VERSION"),
+            ("golang-go", "GOLANG_GO_VERSION"),
+            ("ffmpeg", "FFMPEG_VERSION"),
+            ("ccache", "CCACHE_VERSION"),
+        ]
+
+        for package, version_arg in wildcard_pinned_packages:
+            self.assertIn(
+                f"{package}=${{{version_arg}}}*",
+                content,
+                msg=f"{package} must allow Debian binNMU suffixes with a wildcard version pin",
             )
 
     def test_validation_workflow_checks_dev_environment_contract(self):

@@ -30,7 +30,7 @@ RUN set -eux; \
     case "${detected_arch}" in \
       amd64) \
         dpkg --add-architecture arm64; \
-        foreign_ssl_package="libssl-dev:arm64=${LIBSSL_DEV_ARM64_VERSION}"; \
+        foreign_ssl_package="libssl-dev:arm64=${LIBSSL_DEV_ARM64_VERSION}*"; \
         ;; \
       arm64) \
         foreign_ssl_package=""; \
@@ -42,28 +42,28 @@ RUN set -eux; \
     esac; \
     apt-get update -y; \
     apt_packages=" \
-      build-essential=${BUILD_ESSENTIAL_VERSION} \
-      cmake=${CMAKE_VERSION} \
-      pkg-config=${PKG_CONFIG_VERSION} \
-      squashfs-tools=${SQUASHFS_TOOLS_VERSION} \
-      git=${GIT_VERSION} \
-      bc=${BC_VERSION} \
-      flex=${FLEX_VERSION} \
-      bison=${BISON_VERSION} \
-      ca-certificates=${CA_CERTIFICATES_VERSION} \
-      libssl-dev=${LIBSSL_DEV_VERSION} \
-      dos2unix=${DOS2UNIX_VERSION} \
-      sudo=${SUDO_VERSION} \
-      sshpass=${SSHPASS_VERSION} \
-      unzip=${UNZIP_VERSION} \
-      wget=${WGET_VERSION} \
-      file=${FILE_VERSION} \
-      g++-aarch64-linux-gnu=${GXX_AARCH64_VERSION} \
-      gcc-aarch64-linux-gnu=${GCC_AARCH64_VERSION} \
-      u-boot-tools=${U_BOOT_TOOLS_VERSION} \
-      golang-go=${GOLANG_GO_VERSION} \
-      ffmpeg=${FFMPEG_VERSION} \
-      ccache=${CCACHE_VERSION} \
+      build-essential=${BUILD_ESSENTIAL_VERSION}* \
+      cmake=${CMAKE_VERSION}* \
+      pkg-config=${PKG_CONFIG_VERSION}* \
+      squashfs-tools=${SQUASHFS_TOOLS_VERSION}* \
+      git=${GIT_VERSION}* \
+      bc=${BC_VERSION}* \
+      flex=${FLEX_VERSION}* \
+      bison=${BISON_VERSION}* \
+      ca-certificates=${CA_CERTIFICATES_VERSION}* \
+      libssl-dev=${LIBSSL_DEV_VERSION}* \
+      dos2unix=${DOS2UNIX_VERSION}* \
+      sudo=${SUDO_VERSION}* \
+      sshpass=${SSHPASS_VERSION}* \
+      unzip=${UNZIP_VERSION}* \
+      wget=${WGET_VERSION}* \
+      file=${FILE_VERSION}* \
+      g++-aarch64-linux-gnu=${GXX_AARCH64_VERSION}* \
+      gcc-aarch64-linux-gnu=${GCC_AARCH64_VERSION}* \
+      u-boot-tools=${U_BOOT_TOOLS_VERSION}* \
+      golang-go=${GOLANG_GO_VERSION}* \
+      ffmpeg=${FFMPEG_VERSION}* \
+      ccache=${CCACHE_VERSION}* \
     "; \
     if [ -n "${foreign_ssl_package}" ]; then \
       apt_packages="${apt_packages} ${foreign_ssl_package}"; \

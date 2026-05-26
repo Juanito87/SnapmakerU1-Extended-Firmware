@@ -36,7 +36,7 @@ jobs:
         tags: snapmaker-u1-dev:latest
         # cache-from: type=gha
         # cache-to: type=gha,mode=max
-        build-args: BUILDKIT_INLINE_CACHE=1
+        # build-args: BUILDKIT_INLINE_CACHE=1
 
     - name: Load values vars.mk
       run: cat vars.mk >> "$GITHUB_ENV"
