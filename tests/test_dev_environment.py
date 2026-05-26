@@ -10,6 +10,7 @@ DEV_DOCKERFILE = REPO_ROOT / ".github/dev/Dockerfile"
 DEVCONTAINER = REPO_ROOT / ".devcontainer/devcontainer.json"
 WORKFLOW = REPO_ROOT / ".github/workflows/dev_environment.yaml"
 DEVELOPMENT_DOC = REPO_ROOT / "docs/development.md"
+BOOT_FIT_HELPER = REPO_ROOT / "scripts/helpers/boot_fit.sh"
 
 
 class DevEnvironmentTests(unittest.TestCase):
@@ -59,6 +60,7 @@ class DevEnvironmentTests(unittest.TestCase):
             "golang-go",
             "ffmpeg",
             "u-boot-tools",
+            "device-tree-compiler",
             "ccache",
             "libssl-dev:arm64",
         ]
@@ -90,6 +92,7 @@ class DevEnvironmentTests(unittest.TestCase):
             ("g++-aarch64-linux-gnu", "GXX_AARCH64_VERSION"),
             ("gcc-aarch64-linux-gnu", "GCC_AARCH64_VERSION"),
             ("u-boot-tools", "U_BOOT_TOOLS_VERSION"),
+            ("device-tree-compiler", "DEVICE_TREE_COMPILER_VERSION"),
             ("golang-go", "GOLANG_GO_VERSION"),
             ("ffmpeg", "FFMPEG_VERSION"),
             ("ccache", "CCACHE_VERSION"),
@@ -101,6 +104,13 @@ class DevEnvironmentTests(unittest.TestCase):
                 content,
                 msg=f"{package} must allow Debian binNMU suffixes with a wildcard version pin",
             )
+
+    def test_boot_fit_helper_checks_required_tools(self):
+        content = BOOT_FIT_HELPER.read_text()
+        self.assertIn("command -v dumpimage", content)
+        self.assertIn("command -v mkimage", content)
+        self.assertIn("command -v dtc", content)
+        self.assertIn("Install device-tree-compiler", content)
 
     def test_validation_workflow_checks_dev_environment_contract(self):
         self.assertTrue(WORKFLOW.exists(), "dev environment workflow must exist")

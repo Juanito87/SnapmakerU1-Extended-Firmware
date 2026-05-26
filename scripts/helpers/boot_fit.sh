@@ -13,6 +13,10 @@ if ! command -v mkimage &> /dev/null; then
     echo "Error: mkimage not found. Install u-boot-tools"
     exit 1
 fi
+if ! command -v dtc &> /dev/null; then
+    echo "Error: dtc not found. Install device-tree-compiler"
+    exit 1
+fi
 
 show_usage() {
     echo "Usage: $0 <command> [options]"
