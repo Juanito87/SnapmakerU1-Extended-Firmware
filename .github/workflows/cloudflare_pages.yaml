@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Ruby
-        uses: ruby/setup-ruby@afeafc3 # v1.310.0
+        uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f # v1.310.0
         with:
           ruby-version: '3.2'
           bundler-cache: false
@@ -32,7 +32,7 @@ jobs:
         run: ./scripts/build_docs.sh
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@da0e0df # v3.14.1
+        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -40,7 +40,7 @@ jobs:
 
       - name: Add deployment comment
         if: github.event_name == 'push' && github.ref != 'refs/heads/main'
-        uses: actions/github-script@ed59741 # v8.0.0
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
             const branch = context.ref.replace('refs/heads/', '');
