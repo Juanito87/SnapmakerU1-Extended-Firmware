@@ -1,0 +1,9 @@
+{
+  "name": "snapmaker-u1-dev",
+  "build": {
+    "context": "../.github/dev",
+    "dockerfile": "Dockerfile"
+  },
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind"
+}

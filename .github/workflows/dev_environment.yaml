@@ -1,0 +1,129 @@
+name: Validate Dev Environment
+
+on:
+  pull_request:
+    paths:
+      - dev.sh
+      - .github/dev/Dockerfile
+      - .devcontainer/**
+      - .github/workflows/dev_environment.yaml
+      - tests/test_dev_environment.py
+  push:
+    branches:
+      - main
+      - develop
+      - 'stable-*'
+    paths:
+      - dev.sh
+      - .github/dev/Dockerfile
+      - .devcontainer/**
+      - .github/workflows/dev_environment.yaml
+      - tests/test_dev_environment.py
+  workflow_dispatch:
+
+jobs:
+  validate-dev-environment:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    steps:
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+    - name: Validate shared Dockerfile wiring
+      shell: bash
+      run: |
+        set -euo pipefail
+        python3 - <<'PY'
+        import json
+        import pathlib
+        import re
+
+        repo_root = pathlib.Path.cwd()
+        dev_sh = (repo_root / "dev.sh").read_text()
+        context_match = re.search(r'^BUILD_CONTEXT="([^"]+)"$', dev_sh, re.MULTILINE)
+        image_match = re.search(r'^IMAGE_NAME="([^"]+)"$', dev_sh, re.MULTILINE)
+        if context_match is None:
+            raise SystemExit("dev.sh is missing BUILD_CONTEXT")
+        if image_match is None:
+            raise SystemExit("dev.sh is missing IMAGE_NAME")
+        if context_match.group(1) != ".github/dev":
+            raise SystemExit(f"dev.sh BUILD_CONTEXT changed: {context_match.group(1)}")
+        if image_match.group(1) != "snapmaker-u1-dev":
+            raise SystemExit(f"dev.sh IMAGE_NAME changed: {image_match.group(1)}")
+
+        devcontainer = json.loads((repo_root / ".devcontainer/devcontainer.json").read_text())
+        build = devcontainer.get("build", {})
+        if build.get("context") != "../.github/dev":
+            raise SystemExit(f"devcontainer build context changed: {build.get('context')}")
+        if build.get("dockerfile") != "Dockerfile":
+            raise SystemExit(f"devcontainer Dockerfile changed: {build.get('dockerfile')}")
+        PY
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+
+    - name: Build shared development image
+      uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+      with:
+        context: .github/dev
+        load: true
+        platforms: ${{ matrix.platform }}
+        tags: snapmaker-u1-dev:latest
+        # cache-from: type=gha
+        # cache-to: type=gha,mode=max
+
+    - name: Dump apt pin diagnostics
+      if: ${{ failure() }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "runner=${{ matrix.runner }}"
+        echo "platform=${{ matrix.platform }}"
+        echo "Pinned Dockerfile versions:"
+        grep '^ARG .*_VERSION=' .github/dev/Dockerfile || true
+        docker run --rm --platform "${{ matrix.platform }}" debian:trixie bash -lc '
+          set -euo pipefail
+          if [ "$(dpkg --print-architecture)" != "arm64" ]; then
+            dpkg --add-architecture arm64
+          fi
+          apt-get update -qq >/dev/null
+          apt-cache policy \
+            build-essential \
+            cmake \
+            pkg-config \
+            squashfs-tools \
+            git \
+            bc \
+            flex \
+            bison \
+            ca-certificates \
+            libssl-dev \
+            libssl-dev:arm64 \
+            dos2unix \
+            sudo \
+            sshpass \
+            unzip \
+            wget \
+            file \
+            g++-aarch64-linux-gnu \
+            gcc-aarch64-linux-gnu \
+            u-boot-tools \
+            golang-go \
+            ffmpeg \
+            ccache
+        '
+
+    - name: Smoke test build tools
+      run: ./dev.sh make tools
+
+    - name: Smoke test firmware fetch
+      run: ./dev.sh make firmware
